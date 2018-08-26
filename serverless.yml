@@ -13,9 +13,11 @@
 
 service: chat-backend
 custom:
+  domainName: genest.io
   siteName: chat.genest.io
+  certificateArn: arn:aws:acm:us-east-1:514943277137:certificate/dc18b288-ff97-400a-90e3-03280c104351
   aliasDNSName: s3-website-us-west-2.amazonaws.com
-  aliasHostedZoneId: ZFR0B4V0YBT2M
+  aliasHostedZoneId: Z3BJ6K6RIION7M
 package:
   individually: true
 
@@ -31,9 +33,6 @@ provider:
   stage: ${opt:stage, 'dev'}
   region: us-west-2
 
-  package:
-    exclude:
-      - ./client/**
 # you can add statements to the Lambda function's IAM Role here
   iamRoleStatements:
       - Effect: Allow
@@ -53,34 +52,6 @@ provider:
 #
 resources:
   Resources:
-    # myDNS:
-    #   Type: AWS::Route53::RecordSetGroup
-    #   Properties:
-    #     HostedZoneId: Z1I65Z49YINY2I
-    #     RecordSets:
-    #     - Name: ${opt:stage}.bam.zone.
-    #       Type: A
-    #       AliasTarget:
-    #         HostedZoneId: Z2FDTNDATAQYW2
-    #         DNSName: d2uz75blt1c7oi.cloudfront.net.
-    #AssetBucket:
-      # Type: "AWS::S3::Bucket"
-      # Properties:
-      #   BucketName: ${opt:stage}-sharedAssets.bam.zone
-      #   CorsConfiguration:
-      #     CorsRules:
-      #       -
-      #         AllowedHeaders:
-      #         - '*'
-      #         AllowedMethods:
-      #         - GET
-      #         - PUT
-      #         - POST
-      #         AllowedOrigins:
-      #         - '*'
-      #         MaxAge: 3000
-      #         ExposedHeaders:
-      #           - ETag
     StaticSite:
       Type: AWS::S3::Bucket
       Properties:
@@ -116,7 +87,7 @@ resources:
         AliasTarget:
           DNSName: ${self:custom.aliasDNSName}
           HostedZoneId: ${self:custom.aliasHostedZoneId}
-        HostedZoneName: ${self:custom.siteName}.
+        HostedZoneName: ${self:custom.domainName}.
         Name:
           Ref: StaticSite
         Type: 'A'
@@ -125,14 +96,14 @@ resources:
       Properties:
         DistributionConfig:
           ViewerCertificate:
-            AcmCertificateArn: ${file(./config/config.${self:provider.stage}.json):certificateArn}
+            AcmCertificateArn: ${self:custom.certificateArn}
             SslSupportMethod: sni-only
           Enabled: true
           HttpVersion: http2
           IPV6Enabled: true
           PriceClass: PriceClass_100
           Aliases:
-            - ${opt:stage}-viewer.bam.zone
+            - ${self:custom.siteName}
           CustomErrorResponses:
             - ErrorCode: 403
               ErrorCachingMinTTL: 300
@@ -149,7 +120,7 @@ resources:
           DefaultRootObject: index.html
           Origins:
             - DomainName: ${self:custom.siteName}.s3.amazonaws.com
-              Id: ${opt:stage}-viewer.bam.zone
+              Id: ${self:custom.siteName}.s3.amazonaws.com
               S3OriginConfig:
                 OriginAccessIdentity:
                   Ref: AWS::NoValue
@@ -173,7 +144,7 @@ resources:
             AttributeType: S
         KeySchema:
           - AttributeName: username
-           KeyType: HASH
+            KeyType: HASH
         ProvisionedThroughput:
           ReadCapacityUnits: 2
           WriteCapacityUnits: 2
@@ -188,9 +159,9 @@ resources:
             AttributeType: S
         KeySchema:
           - AttributeName: id
-           KeyType: HASH
+            KeyType: HASH
           - AttributeName: messageId
-           KeyType: RANGE
+            KeyType: RANGE
         ProvisionedThroughput:
           ReadCapacityUnits: 2
           WriteCapacityUnits: 2
@@ -203,7 +174,7 @@ resources:
             AttributeType: S
         KeySchema:
           - AttributeName: id
-           KeyType: HASH
+            KeyType: HASH
         ProvisionedThroughput:
           ReadCapacityUnits: 2
           WriteCapacityUnits: 2
