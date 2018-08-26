@@ -48,6 +48,8 @@ provider:
           - dynamodb:BatchWriteItem
         Resource:
           - arn:aws:dynamodb:*:*:table/${opt:stage}Users
+          - arn:aws:dynamodb:*:*:table/${opt:stage}Conversations
+          - arn:aws:dynamodb:*:*:table/${opt:stage}Messages
 #
 resources:
   Resources:
@@ -162,23 +164,51 @@ resources:
             MinTTL: 10
             ForwardedValues:
               QueryString: false
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${opt:stage}Users
+        AttributeDefinitions:
+          - AttributeName: username
+            AttributeType: S
+        KeySchema:
+          - AttributeName: username
+           KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 2
+          WriteCapacityUnits: 2
+    ConversationsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${opt:stage}Conversations
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: messageId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+           KeyType: HASH
+          - AttributeName: messageId
+           KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 2
+          WriteCapacityUnits: 2
+    MessagesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${opt:stage}Messages
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+           KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 2
+          WriteCapacityUnits: 2
 
-
-  Outputs:
-    Chat:
-      Description: The CloudFront distribution
-      Value: ChatCDN
-#resources:
-#  Resources:
-#    NewResource:
-#      Type: AWS::S3::Bucket
-#      Properties:
-#        BucketName: my-new-bucket
-#  Outputs:
-#     NewOutput:
-#       Description: "Description for the output"
-#       Value: "Some output value"
-            # - DomainName: ${opt:stage}-assets.bam.zone.s3.amazonaws.com
-            #   Id: S3-${opt:stage}-assets.bam.zone
-            #   S3OriginConfig:
-            #     OriginAccessIdentity: origin-access-identity/cloudfront/${file(./config/config.${self:provider.stage}.json):originAccessIdentity}
+  # Outputs:
+  #   Chat:
+  #     Description: The CloudFront distribution
+  #     Value: ChatCDN
