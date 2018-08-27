@@ -1,0 +1,94 @@
+type Users {
+    username: String!
+    name: String
+    conversations: [String]
+}
+
+type UsersConnection {
+    items: [Users]
+    nextToken: String
+}
+
+type Query {
+    getUsers(username: String!): Users
+}
+
+type Mutation {
+    addUsers(
+      username: String!
+      name: String
+      conversations: [String]
+    ) : Users
+}
+
+input TableBooleanFilterInput {
+    ne: Boolean
+    eq: Boolean
+}
+
+input TableUsersFilterInput {
+    username: TableStringFilterInput
+    name: TableStringFilterInput
+    conversations: TableStringFilterInput
+}
+
+input TableFloatFilterInput {
+    ne: Float
+    eq: Float
+    le: Float
+    lt: Float
+    ge: Float
+    gt: Float
+    contains: Float
+    notContains: Float
+    between: [Float]
+}
+
+input TableIDFilterInput {
+    ne: ID
+    eq: ID
+    le: ID
+    lt: ID
+    ge: ID
+    gt: ID
+    contains: ID
+    notContains: ID
+    between: [ID]
+    beginsWith: ID
+}
+
+input TableIntFilterInput {
+    ne: Int
+    eq: Int
+    le: Int
+    lt: Int
+    ge: Int
+    gt: Int
+    contains: Int
+    notContains: Int
+    between: [Int]
+}
+
+input TableStringFilterInput {
+    ne: String
+    eq: String
+    le: String
+    lt: String
+    ge: String
+    gt: String
+    contains: String
+    notContains: String
+    between: [String]
+    beginsWith: String
+}
+
+input UpdateUsersInput {
+    username: String!
+    name: String
+    groups: [String]
+}
+
+schema {
+    query: Query
+    mutation: Mutation
+}
