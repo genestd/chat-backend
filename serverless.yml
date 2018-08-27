@@ -43,6 +43,11 @@ custom:
         request: getUsers-request-mapping-template.txt
         response: getUsers-response-mapping-template.txt
       - dataSource: ${self:provider.stage}UsersDataSource
+        type: Query #, Mutation, Subscription
+        field: getAllUsers
+        request: getAllUsers-request-mapping-template.txt
+        response: getAllUsers-response-mapping-template.txt
+      - dataSource: ${self:provider.stage}UsersDataSource
         type: Mutation #, Mutation, Subscription
         field: addUsers
         request: addUsers-request-mapping-template.txt
@@ -219,7 +224,7 @@ resources:
       Type: "AWS::Cognito::UserPool"
       Properties:
         UserPoolName: ${self:service}-user-pool
-        UsernameAttributes: 
+        UsernameAttributes:
           - email
         AutoVerifiedAttributes:
           - email
@@ -252,17 +257,17 @@ resources:
       Properties:
         ClientName: ${self:service}-client
         GenerateSecret: false
-        UserPoolId: 
+        UserPoolId:
           Ref: UserPool
-    
+
     # Creates a federeated Identity pool
     IdentityPool:
       Type: "AWS::Cognito::IdentityPool"
       Properties:
         IdentityPoolName: ChatIdentityPool
         AllowUnauthenticatedIdentities: true
-        CognitoIdentityProviders: 
-          - ClientId: 
+        CognitoIdentityProviders:
+          - ClientId:
               Ref: UserPoolClient
             ProviderName:
               'Fn::GetAtt': [ UserPool, ProviderName ]
@@ -270,25 +275,25 @@ resources:
     CognitoUnAuthorizedRole:
       Type: "AWS::IAM::Role"
       Properties:
-        AssumeRolePolicyDocument: 
+        AssumeRolePolicyDocument:
           Version: "2012-10-17"
           Statement:
             - Effect: "Allow"
-              Principal: 
+              Principal:
                 Federated: "cognito-identity.amazonaws.com"
-              Action: 
+              Action:
                 - "sts:AssumeRoleWithWebIdentity"
               Condition:
-                StringEquals: 
+                StringEquals:
                   "cognito-identity.amazonaws.com:aud":
                     Ref: IdentityPool
                 "ForAnyValue:StringLike":
                   "cognito-identity.amazonaws.com:amr": unauthenticated
         Policies:
           - PolicyName: "CognitoUnauthorizedPolicy"
-            PolicyDocument: 
+            PolicyDocument:
               Version: "2012-10-17"
-              Statement: 
+              Statement:
                 - Effect: "Allow"
                   Action:
                     - "mobileanalytics:PutEvents"
@@ -299,37 +304,37 @@ resources:
     CognitoAuthorizedRole:
       Type: "AWS::IAM::Role"
       Properties:
-        AssumeRolePolicyDocument: 
+        AssumeRolePolicyDocument:
           Version: "2012-10-17"
           Statement:
             - Effect: "Allow"
-              Principal: 
+              Principal:
                 Federated: "cognito-identity.amazonaws.com"
-              Action: 
+              Action:
                 - "sts:AssumeRoleWithWebIdentity"
               Condition:
-                StringEquals: 
+                StringEquals:
                   "cognito-identity.amazonaws.com:aud":
                     Ref: IdentityPool
                 "ForAnyValue:StringLike":
                   "cognito-identity.amazonaws.com:amr": authenticated
         Policies:
           - PolicyName: "CognitoAuthorizedPolicy"
-            PolicyDocument: 
+            PolicyDocument:
               Version: "2012-10-17"
-              Statement: 
+              Statement:
                 - Effect: "Allow"
                   Action:
                     - "mobileanalytics:PutEvents"
                     - "cognito-sync:*"
                     - "cognito-identity:*"
                   Resource: "*"
-    
+
     # Assigns the roles to the Identity Pool
     IdentityPoolRoleMapping:
       Type: "AWS::Cognito::IdentityPoolRoleAttachment"
       Properties:
-        IdentityPoolId: 
+        IdentityPoolId:
           Ref: IdentityPool
         Roles:
           authenticated:

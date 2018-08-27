@@ -11,6 +11,7 @@ type UsersConnection {
 
 type Query {
     getUsers(username: String!): Users
+    getAllUsers(limit: Int, nextToken: String): UsersConnection
 }
 
 type Mutation {
