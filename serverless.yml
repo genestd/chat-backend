@@ -12,12 +12,49 @@
 # Happy Coding!
 
 service: chat-backend
+plugins:
+  - serverless-appsync-plugin
+
 custom:
   domainName: genest.io
   siteName: chat.genest.io
   certificateArn: arn:aws:acm:us-east-1:514943277137:certificate/dc18b288-ff97-400a-90e3-03280c104351
   aliasDNSName: s3-website-us-west-2.amazonaws.com
   aliasHostedZoneId: Z3BJ6K6RIION7M
+  accountId: 514943277137
+  appSync:
+    name: ${self:provider.stage}-chat-appsync # defaults to api
+    # apiKey # only required for update-appsync/delete-appsync
+    authenticationType: AMAZON_COGNITO_USER_POOLS
+    # if AMAZON_COGNITO_USER_POOLS
+    userPoolConfig:
+      awsRegion: ${self:provider.region} # required # region
+      defaultAction: ALLOW
+      userPoolId:
+        Ref: UserPool # required # user pool ID
+    logConfig:
+      loggingRoleArn: { Fn::GetAtt: [AppSyncLoggingServiceRole, Arn] } # Where AppSyncLoggingServiceRole is a role with CloudWatch Logs write access
+      level: ERROR # Logging Level: NONE | ERROR | ALL
+    mappingTemplatesLocation: # defaults to mapping-templates
+    mappingTemplates:
+      - dataSource: ${self:provider.stage}UsersDataSource
+        type: Query #, Mutation, Subscription
+        field: getUsers
+        request: getUsers-request-mapping-template.txt
+        response: getUsers-response-mapping-template.txt
+      - dataSource: ${self:provider.stage}UsersDataSource
+        type: Mutation #, Mutation, Subscription
+        field: addUsers
+        request: addUsers-request-mapping-template.txt
+        response: addUsers-response-mapping-template.txt
+    schema: # defaults schema.graphql
+    serviceRole: { Fn::GetAtt: [AppSyncLoggingServiceRole, Arn] }
+    dataSources:
+      - type: AMAZON_DYNAMODB
+        name: ${self:provider.stage}UsersDataSource # data source name
+        description: Users table
+        config:
+          tableName: ${self:provider.stage}Users # Where MyTable is a dynamodb table defined in Resources
 package:
   individually: true
 
@@ -299,6 +336,45 @@ resources:
               'Fn::GetAtt': [ CognitoAuthorizedRole, Arn ]
           unauthenticated:
               'Fn::GetAtt': [ CognitoUnAuthorizedRole, Arn ]
+    AppSyncLoggingServiceRole:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: appsync-logging-role-${opt:stage}
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - appsync.amazonaws.com
+              Action: sts:AssumeRole
+        Policies:
+          - PolicyName: chatRolePolicy-${opt:stage}
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                    - logs:DescribeLogStreams
+                  Resource:
+                    - arn:aws:logs:*:*:*
+                - Effect: Allow
+                  Action:
+                    - dynamodb:GetItem
+                    - dynamodb:BatchGetItem
+                    - dynamodb:Query
+                    - dynamodb:Scan
+                    - dynamodb:PutItem
+                    - dynamodb:UpdateItem
+                    - dynamodb:DeleteItem
+                    - dynamodb:BatchWriteItem
+                  Resource:
+                    - arn:aws:dynamodb:*:*:table/${opt:stage}Users
+                    - arn:aws:dynamodb:*:*:table/${opt:stage}Conversations
+                    - arn:aws:dynamodb:*:*:table/${opt:stage}Messages
   # Outputs:
   #   Chat:
   #     Description: The CloudFront distribution
