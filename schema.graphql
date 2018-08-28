@@ -12,7 +12,9 @@ type UsersConnection {
 type Conversations {
     id: String!
     messageId: String
+    sender: String
     participants: [String]
+    message: String
     timestamp: Int
 }
 
@@ -33,6 +35,15 @@ type Mutation {
       name: String
       conversations: [String]
     ) : Users
+
+    addMessage(
+      id: String!
+      messageId: String!
+      timestamp: Int!
+      sender: String!
+      participants: [String]!
+      message: String!
+    ) : Conversations
 }
 
 input TableBooleanFilterInput {
