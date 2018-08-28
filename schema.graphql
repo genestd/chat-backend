@@ -9,9 +9,22 @@ type UsersConnection {
     nextToken: String
 }
 
+type Conversations {
+    id: String!
+    messageId: String
+    participants: [String]
+    timestamp: Int
+}
+
+type ConversationsConnection {
+    items: [Conversations]
+    nextToken: String
+}
+
 type Query {
     getUsers(username: String!): Users
     getAllUsers(limit: Int, nextToken: String): UsersConnection
+    getConversations(id: String!): ConversationsConnection
 }
 
 type Mutation {

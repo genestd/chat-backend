@@ -42,6 +42,11 @@ custom:
         field: getUsers
         request: getUsers-request-mapping-template.txt
         response: getUsers-response-mapping-template.txt
+      - dataSource: ${self:provider.stage}ConversationsDataSource
+        type: Query #, Mutation, Subscription
+        field: getConversations
+        request: getConversations-request-mapping-template.txt
+        response: getConversations-response-mapping-template.txt
       - dataSource: ${self:provider.stage}UsersDataSource
         type: Query #, Mutation, Subscription
         field: getAllUsers
@@ -60,6 +65,11 @@ custom:
         description: Users table
         config:
           tableName: ${self:provider.stage}Users # Where MyTable is a dynamodb table defined in Resources
+      - type: AMAZON_DYNAMODB
+        name: ${self:provider.stage}ConversationsDataSource # data source name
+        description: Conversations table
+        config:
+          tableName: ${self:provider.stage}Conversations # Where MyTable is a dynamodb table defined in Resources
 package:
   individually: true
 
