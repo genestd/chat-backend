@@ -16,12 +16,12 @@ plugins:
   - serverless-appsync-plugin
 
 custom:
+  accountId: 514943277137
   domainName: genest.io
   siteName: chat.genest.io
   certificateArn: arn:aws:acm:us-east-1:514943277137:certificate/dc18b288-ff97-400a-90e3-03280c104351
   aliasDNSName: s3-website-us-west-2.amazonaws.com
   aliasHostedZoneId: Z3BJ6K6RIION7M
-  accountId: 514943277137
   appSync:
     name: ${self:provider.stage}-chat-appsync # defaults to api
     # apiKey # only required for update-appsync/delete-appsync
