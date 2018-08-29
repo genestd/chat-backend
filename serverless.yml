@@ -47,6 +47,11 @@ custom:
         field: getConversations
         request: getConversations-request-mapping-template.txt
         response: getConversations-response-mapping-template.txt
+      - dataSource: ${self:provider.stage}UserConversationDataSource
+        type: Query #, Mutation, Subscription
+        field: getUserConversation
+        request: getUserConversation-request-mapping-template.txt
+        response: getUserConversation-response-mapping-template.txt
       - dataSource: ${self:provider.stage}UsersDataSource
         type: Query #, Mutation, Subscription
         field: getAllUsers
@@ -75,6 +80,11 @@ custom:
         description: Conversations table
         config:
           tableName: ${self:provider.stage}Conversations # Where MyTable is a dynamodb table defined in Resources
+      - type: AMAZON_DYNAMODB
+        name: ${self:provider.stage}UserConversationDataSource # data source name
+        description: Conversation Details table
+        config:
+          tableName: ${self:provider.stage}UserConversation # Where MyTable is a dynamodb table defined in Resources
 package:
   individually: true
 
@@ -105,7 +115,7 @@ provider:
         Resource:
           - arn:aws:dynamodb:*:*:table/${opt:stage}Users
           - arn:aws:dynamodb:*:*:table/${opt:stage}Conversations
-          - arn:aws:dynamodb:*:*:table/${opt:stage}Messages
+          - arn:aws:dynamodb:*:*:table/${opt:stage}UserConversation
 #
 resources:
   Resources:
@@ -222,16 +232,20 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 2
           WriteCapacityUnits: 2
-    MessagesTable:
+    UserConversationTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${opt:stage}Messages
+        TableName: ${opt:stage}UserConversation
         AttributeDefinitions:
+          - AttributeName: username
+            AttributeType: S
           - AttributeName: id
             AttributeType: S
         KeySchema:
-          - AttributeName: id
+          - AttributeName: username
             KeyType: HASH
+          - AttributeName: id
+            KeyType: RANGE
         ProvisionedThroughput:
           ReadCapacityUnits: 2
           WriteCapacityUnits: 2
@@ -394,7 +408,7 @@ resources:
                   Resource:
                     - arn:aws:dynamodb:*:*:table/${opt:stage}Users
                     - arn:aws:dynamodb:*:*:table/${opt:stage}Conversations
-                    - arn:aws:dynamodb:*:*:table/${opt:stage}Messages
+                    - arn:aws:dynamodb:*:*:table/${opt:stage}UserConversation
   # Outputs:
   #   Chat:
   #     Description: The CloudFront distribution

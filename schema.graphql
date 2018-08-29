@@ -1,11 +1,22 @@
 type Users {
     username: String!
     name: String
-    conversations: [String]
 }
 
 type UsersConnection {
     items: [Users]
+    nextToken: String
+}
+
+type UserConversation {
+    username: String!
+    id: String!
+    partner: String
+    description: String
+}
+
+type UserConversationConnection {
+    items: [UserConversation]
     nextToken: String
 }
 
@@ -27,13 +38,13 @@ type Query {
     getUsers(username: String!): Users
     getAllUsers(limit: Int, nextToken: String): UsersConnection
     getConversations(id: String!): ConversationsConnection
+    getUserConversation(username: String!, limit: Int, nextToken: String) : UserConversationConnection
 }
 
 type Mutation {
     addUsers(
       username: String!
       name: String
-      conversations: [String]
     ) : Users
 
     addMessage(
@@ -44,6 +55,11 @@ type Mutation {
       participants: [String]!
       message: String!
     ) : Conversations
+}
+
+type Subscription {
+	onAddMessage: Conversations
+		@aws_subscribe(mutations: ["addMessage"])
 }
 
 input TableBooleanFilterInput {
@@ -116,4 +132,5 @@ input UpdateUsersInput {
 schema {
     query: Query
     mutation: Mutation
+    subscription: Subscription
 }
