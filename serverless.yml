@@ -12,10 +12,84 @@
 # Happy Coding!
 
 service: chat-backend
+plugins:
+  - serverless-appsync-plugin
+
 custom:
+  domainName: genest.io
   siteName: chat.genest.io
+  certificateArn: arn:aws:acm:us-east-1:514943277137:certificate/dc18b288-ff97-400a-90e3-03280c104351
   aliasDNSName: s3-website-us-west-2.amazonaws.com
-  aliasHostedZoneId: ZFR0B4V0YBT2M
+  aliasHostedZoneId: Z3BJ6K6RIION7M
+  accountId: 514943277137
+  appSync:
+    name: ${self:provider.stage}-chat-appsync # defaults to api
+    # apiKey # only required for update-appsync/delete-appsync
+    authenticationType: AMAZON_COGNITO_USER_POOLS
+    # if AMAZON_COGNITO_USER_POOLS
+    userPoolConfig:
+      awsRegion: ${self:provider.region} # required # region
+      defaultAction: ALLOW
+      userPoolId:
+        Ref: UserPool # required # user pool ID
+    logConfig:
+      loggingRoleArn: { Fn::GetAtt: [AppSyncLoggingServiceRole, Arn] } # Where AppSyncLoggingServiceRole is a role with CloudWatch Logs write access
+      level: ERROR # Logging Level: NONE | ERROR | ALL
+    mappingTemplatesLocation: # defaults to mapping-templates
+    mappingTemplates:
+      - dataSource: ${self:provider.stage}UsersDataSource
+        type: Query #, Mutation, Subscription
+        field: getUsers
+        request: getUsers-request-mapping-template.txt
+        response: getUsers-response-mapping-template.txt
+      - dataSource: ${self:provider.stage}ConversationsDataSource
+        type: Query #, Mutation, Subscription
+        field: getConversations
+        request: getConversations-request-mapping-template.txt
+        response: getConversations-response-mapping-template.txt
+      - dataSource: ${self:provider.stage}UserConversationDataSource
+        type: Query #, Mutation, Subscription
+        field: getUserConversation
+        request: getUserConversation-request-mapping-template.txt
+        response: getUserConversation-response-mapping-template.txt
+      - dataSource: ${self:provider.stage}UsersDataSource
+        type: Query #, Mutation, Subscription
+        field: getAllUsers
+        request: getAllUsers-request-mapping-template.txt
+        response: getAllUsers-response-mapping-template.txt
+      - dataSource: ${self:provider.stage}UsersDataSource
+        type: Mutation #, Mutation, Subscription
+        field: addUsers
+        request: addUsers-request-mapping-template.txt
+        response: addUsers-response-mapping-template.txt
+      - dataSource: ${self:provider.stage}ConversationsDataSource
+        type: Mutation #, Mutation, Subscription
+        field: addMessage
+        request: addMessage-request-mapping-template.txt
+        response: addMessage-response-mapping-template.txt
+      - dataSource: ${self:provider.stage}UserConversationDataSource
+        type: Mutation #, Mutation, Subscription
+        field: addUserConversation
+        request: addUserConversation-request-mapping-template.txt
+        response: addUserConversation-response-mapping-template.txt
+    schema: # defaults schema.graphql
+    serviceRole: { Fn::GetAtt: [AppSyncLoggingServiceRole, Arn] }
+    dataSources:
+      - type: AMAZON_DYNAMODB
+        name: ${self:provider.stage}UsersDataSource # data source name
+        description: Users table
+        config:
+          tableName: ${self:provider.stage}Users # Where MyTable is a dynamodb table defined in Resources
+      - type: AMAZON_DYNAMODB
+        name: ${self:provider.stage}ConversationsDataSource # data source name
+        description: Conversations table
+        config:
+          tableName: ${self:provider.stage}Conversations # Where MyTable is a dynamodb table defined in Resources
+      - type: AMAZON_DYNAMODB
+        name: ${self:provider.stage}UserConversationDataSource # data source name
+        description: Conversation Details table
+        config:
+          tableName: ${self:provider.stage}UserConversation # Where MyTable is a dynamodb table defined in Resources
 package:
   individually: true
 
@@ -31,9 +105,6 @@ provider:
   stage: ${opt:stage, 'dev'}
   region: us-west-2
 
-  package:
-    exclude:
-      - ./client/**
 # you can add statements to the Lambda function's IAM Role here
   iamRoleStatements:
       - Effect: Allow
@@ -48,37 +119,11 @@ provider:
           - dynamodb:BatchWriteItem
         Resource:
           - arn:aws:dynamodb:*:*:table/${opt:stage}Users
+          - arn:aws:dynamodb:*:*:table/${opt:stage}Conversations
+          - arn:aws:dynamodb:*:*:table/${opt:stage}UserConversation
 #
 resources:
   Resources:
-    # myDNS:
-    #   Type: AWS::Route53::RecordSetGroup
-    #   Properties:
-    #     HostedZoneId: Z1I65Z49YINY2I
-    #     RecordSets:
-    #     - Name: ${opt:stage}.bam.zone.
-    #       Type: A
-    #       AliasTarget:
-    #         HostedZoneId: Z2FDTNDATAQYW2
-    #         DNSName: d2uz75blt1c7oi.cloudfront.net.
-    #AssetBucket:
-      # Type: "AWS::S3::Bucket"
-      # Properties:
-      #   BucketName: ${opt:stage}-sharedAssets.bam.zone
-      #   CorsConfiguration:
-      #     CorsRules:
-      #       -
-      #         AllowedHeaders:
-      #         - '*'
-      #         AllowedMethods:
-      #         - GET
-      #         - PUT
-      #         - POST
-      #         AllowedOrigins:
-      #         - '*'
-      #         MaxAge: 3000
-      #         ExposedHeaders:
-      #           - ETag
     StaticSite:
       Type: AWS::S3::Bucket
       Properties:
@@ -114,7 +159,7 @@ resources:
         AliasTarget:
           DNSName: ${self:custom.aliasDNSName}
           HostedZoneId: ${self:custom.aliasHostedZoneId}
-        HostedZoneName: ${self:custom.siteName}.
+        HostedZoneName: ${self:custom.domainName}.
         Name:
           Ref: StaticSite
         Type: 'A'
@@ -123,14 +168,14 @@ resources:
       Properties:
         DistributionConfig:
           ViewerCertificate:
-            AcmCertificateArn: ${file(./config/config.${self:provider.stage}.json):certificateArn}
+            AcmCertificateArn: ${self:custom.certificateArn}
             SslSupportMethod: sni-only
           Enabled: true
           HttpVersion: http2
           IPV6Enabled: true
           PriceClass: PriceClass_100
           Aliases:
-            - ${opt:stage}-viewer.bam.zone
+            - ${self:custom.siteName}
           CustomErrorResponses:
             - ErrorCode: 403
               ErrorCachingMinTTL: 300
@@ -147,7 +192,7 @@ resources:
           DefaultRootObject: index.html
           Origins:
             - DomainName: ${self:custom.siteName}.s3.amazonaws.com
-              Id: ${opt:stage}-viewer.bam.zone
+              Id: ${self:custom.siteName}.s3.amazonaws.com
               S3OriginConfig:
                 OriginAccessIdentity:
                   Ref: AWS::NoValue
@@ -162,23 +207,214 @@ resources:
             MinTTL: 10
             ForwardedValues:
               QueryString: false
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${opt:stage}Users
+        AttributeDefinitions:
+          - AttributeName: username
+            AttributeType: S
+        KeySchema:
+          - AttributeName: username
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 2
+          WriteCapacityUnits: 2
+    ConversationsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${opt:stage}Conversations
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: messageId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+          - AttributeName: messageId
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 2
+          WriteCapacityUnits: 2
+    UserConversationTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${opt:stage}UserConversation
+        AttributeDefinitions:
+          - AttributeName: username
+            AttributeType: S
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: username
+            KeyType: HASH
+          - AttributeName: id
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 2
+          WriteCapacityUnits: 2
+    UserPool:
+      Type: "AWS::Cognito::UserPool"
+      Properties:
+        UserPoolName: ${self:service}-user-pool
+        UsernameAttributes:
+          - email
+        AutoVerifiedAttributes:
+          - email
+        MfaConfiguration: "OFF"
+        EmailVerificationSubject: "Your chat verification code"
+        EmailVerificationMessage: "Your chat verification code is {####}."
+        SmsAuthenticationMessage: "Your chat authentication code is {####}."
+        Schema:
+          - Name: email
+            AttributeDataType: String
+            Mutable: false
+            Required: true
+        Policies:
+          PasswordPolicy:
+            RequireLowercase: false
+            RequireSymbols: false
+            RequireNumbers: false
+            MinimumLength: 8
+            RequireUppercase: false
+        AdminCreateUserConfig:
+          InviteMessageTemplate:
+            EmailMessage: "Your chat username is {username} and temporary password is {####}."
+            EmailSubject: "Your temporary chat password"
+            SMSMessage: "Your chat username is {username} and temporary password is {####}."
+          UnusedAccountValidityDays: 7
+          AllowAdminCreateUserOnly: false
+    # Creates a User Pool Client to be used by the identity pool
+    UserPoolClient:
+      Type: "AWS::Cognito::UserPoolClient"
+      Properties:
+        ClientName: ${self:service}-client
+        GenerateSecret: false
+        UserPoolId:
+          Ref: UserPool
 
+    # Creates a federeated Identity pool
+    IdentityPool:
+      Type: "AWS::Cognito::IdentityPool"
+      Properties:
+        IdentityPoolName: ChatIdentityPool
+        AllowUnauthenticatedIdentities: true
+        CognitoIdentityProviders:
+          - ClientId:
+              Ref: UserPoolClient
+            ProviderName:
+              'Fn::GetAtt': [ UserPool, ProviderName ]
+    # Create a role for unauthorized acces to AWS resources. Very limited access. Only allows users in the previously created Identity Pool
+    CognitoUnAuthorizedRole:
+      Type: "AWS::IAM::Role"
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Principal:
+                Federated: "cognito-identity.amazonaws.com"
+              Action:
+                - "sts:AssumeRoleWithWebIdentity"
+              Condition:
+                StringEquals:
+                  "cognito-identity.amazonaws.com:aud":
+                    Ref: IdentityPool
+                "ForAnyValue:StringLike":
+                  "cognito-identity.amazonaws.com:amr": unauthenticated
+        Policies:
+          - PolicyName: "CognitoUnauthorizedPolicy"
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: "Allow"
+                  Action:
+                    - "mobileanalytics:PutEvents"
+                    - "cognito-sync:*"
+                  Resource: "*"
+    # Create a role for authorized acces to AWS resources. Control what your user can access. This example only allows Lambda invokation
+    # Only allows users in the previously created Identity Pool
+    CognitoAuthorizedRole:
+      Type: "AWS::IAM::Role"
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Principal:
+                Federated: "cognito-identity.amazonaws.com"
+              Action:
+                - "sts:AssumeRoleWithWebIdentity"
+              Condition:
+                StringEquals:
+                  "cognito-identity.amazonaws.com:aud":
+                    Ref: IdentityPool
+                "ForAnyValue:StringLike":
+                  "cognito-identity.amazonaws.com:amr": authenticated
+        Policies:
+          - PolicyName: "CognitoAuthorizedPolicy"
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: "Allow"
+                  Action:
+                    - "mobileanalytics:PutEvents"
+                    - "cognito-sync:*"
+                    - "cognito-identity:*"
+                  Resource: "*"
 
-  Outputs:
-    Chat:
-      Description: The CloudFront distribution
-      Value: ChatCDN
-#resources:
-#  Resources:
-#    NewResource:
-#      Type: AWS::S3::Bucket
-#      Properties:
-#        BucketName: my-new-bucket
-#  Outputs:
-#     NewOutput:
-#       Description: "Description for the output"
-#       Value: "Some output value"
-            # - DomainName: ${opt:stage}-assets.bam.zone.s3.amazonaws.com
-            #   Id: S3-${opt:stage}-assets.bam.zone
-            #   S3OriginConfig:
-            #     OriginAccessIdentity: origin-access-identity/cloudfront/${file(./config/config.${self:provider.stage}.json):originAccessIdentity}
+    # Assigns the roles to the Identity Pool
+    IdentityPoolRoleMapping:
+      Type: "AWS::Cognito::IdentityPoolRoleAttachment"
+      Properties:
+        IdentityPoolId:
+          Ref: IdentityPool
+        Roles:
+          authenticated:
+              'Fn::GetAtt': [ CognitoAuthorizedRole, Arn ]
+          unauthenticated:
+              'Fn::GetAtt': [ CognitoUnAuthorizedRole, Arn ]
+    AppSyncLoggingServiceRole:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: appsync-logging-role-${opt:stage}
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - appsync.amazonaws.com
+              Action: sts:AssumeRole
+        Policies:
+          - PolicyName: chatRolePolicy-${opt:stage}
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                    - logs:DescribeLogStreams
+                  Resource:
+                    - arn:aws:logs:*:*:*
+                - Effect: Allow
+                  Action:
+                    - dynamodb:GetItem
+                    - dynamodb:BatchGetItem
+                    - dynamodb:Query
+                    - dynamodb:Scan
+                    - dynamodb:PutItem
+                    - dynamodb:UpdateItem
+                    - dynamodb:DeleteItem
+                    - dynamodb:BatchWriteItem
+                  Resource:
+                    - arn:aws:dynamodb:*:*:table/${opt:stage}Users
+                    - arn:aws:dynamodb:*:*:table/${opt:stage}Conversations
+                    - arn:aws:dynamodb:*:*:table/${opt:stage}UserConversation
+  # Outputs:
+  #   Chat:
+  #     Description: The CloudFront distribution
+  #     Value: ChatCDN

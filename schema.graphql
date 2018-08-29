@@ -1,0 +1,143 @@
+type Users {
+    username: String!
+    name: String
+}
+
+type UsersConnection {
+    items: [Users]
+    nextToken: String
+}
+
+type UserConversation {
+    username: String!
+    id: String!
+    partner: String
+    description: String
+}
+
+type UserConversationConnection {
+    items: [UserConversation]
+    nextToken: String
+}
+
+type Conversations {
+    id: String!
+    messageId: String
+    sender: String
+    participants: [String]
+    message: String
+    timestamp: Int
+}
+
+type ConversationsConnection {
+    items: [Conversations]
+    nextToken: String
+}
+
+type Query {
+    getUsers(username: String!): Users
+    getAllUsers(limit: Int, nextToken: String): UsersConnection
+    getConversations(id: String!): ConversationsConnection
+    getUserConversation(username: String!, limit: Int, nextToken: String) : UserConversationConnection
+}
+
+type Mutation {
+    addUsers(
+      username: String!
+      name: String
+    ) : Users
+
+    addMessage(
+      id: String!
+      messageId: String!
+      timestamp: Int!
+      sender: String!
+      participants: [String]!
+      message: String!
+    ) : Conversations
+
+    addUserConversation(
+      username: String!
+      id: String!
+      partner: String!
+    ) : UserConversation
+
+}
+
+type Subscription {
+	onAddMessage: Conversations
+		@aws_subscribe(mutations: ["addMessage"])
+}
+
+input TableBooleanFilterInput {
+    ne: Boolean
+    eq: Boolean
+}
+
+input TableUsersFilterInput {
+    username: TableStringFilterInput
+    name: TableStringFilterInput
+    conversations: TableStringFilterInput
+}
+
+input TableFloatFilterInput {
+    ne: Float
+    eq: Float
+    le: Float
+    lt: Float
+    ge: Float
+    gt: Float
+    contains: Float
+    notContains: Float
+    between: [Float]
+}
+
+input TableIDFilterInput {
+    ne: ID
+    eq: ID
+    le: ID
+    lt: ID
+    ge: ID
+    gt: ID
+    contains: ID
+    notContains: ID
+    between: [ID]
+    beginsWith: ID
+}
+
+input TableIntFilterInput {
+    ne: Int
+    eq: Int
+    le: Int
+    lt: Int
+    ge: Int
+    gt: Int
+    contains: Int
+    notContains: Int
+    between: [Int]
+}
+
+input TableStringFilterInput {
+    ne: String
+    eq: String
+    le: String
+    lt: String
+    ge: String
+    gt: String
+    contains: String
+    notContains: String
+    between: [String]
+    beginsWith: String
+}
+
+input UpdateUsersInput {
+    username: String!
+    name: String
+    groups: [String]
+}
+
+schema {
+    query: Query
+    mutation: Mutation
+    subscription: Subscription
+}

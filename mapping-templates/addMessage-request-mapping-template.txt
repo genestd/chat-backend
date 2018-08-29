@@ -1,0 +1,19 @@
+#set($ptps = [])
+#foreach($ptp in ${context.arguments.participants})
+    $util.qr($ptps.add( $util.dynamodb.toString($ptp) ))
+#end
+
+{
+  "version": "2017-02-28",
+  "operation": "PutItem",
+  "key": {
+    "id": { "S": "${context.arguments.id}" },
+    "messageId": {"S": "${context.arguments.messageId}"}
+  },
+  "attributeValues": {
+    "timestamp": { "N": "${context.arguments.timestamp}"},
+    "sender": {"S": "${context.arguments.sender}"},
+    "message": {"S": "${context.arguments.message}"},
+    "participants": {"L": $util.toJson($ptps)}
+  }
+}
