@@ -1,0 +1,11 @@
+{
+  "version": "2017-02-28",
+  "operation": "PutItem",
+  "key": {
+    "username": { "S": "${context.arguments.username}" },
+    "id": {"S": "${context.arguments.id}" }
+  },
+  "attributeValues": {
+    "partner": { "S": "${context.arguments.partner}"},
+  }
+}

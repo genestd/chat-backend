@@ -55,6 +55,13 @@ type Mutation {
       participants: [String]!
       message: String!
     ) : Conversations
+
+    addUserConversation(
+      username: String!
+      id: String!
+      partner: String!
+    ) : UserConversation
+
 }
 
 type Subscription {

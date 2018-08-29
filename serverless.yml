@@ -67,6 +67,11 @@ custom:
         field: addMessage
         request: addMessage-request-mapping-template.txt
         response: addMessage-response-mapping-template.txt
+      - dataSource: ${self:provider.stage}UserConversationDataSource
+        type: Mutation #, Mutation, Subscription
+        field: addUserConversation
+        request: addUserConversation-request-mapping-template.txt
+        response: addUserConversation-response-mapping-template.txt
     schema: # defaults schema.graphql
     serviceRole: { Fn::GetAtt: [AppSyncLoggingServiceRole, Arn] }
     dataSources:
