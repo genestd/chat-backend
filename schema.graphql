@@ -67,6 +67,8 @@ type Mutation {
 type Subscription {
 	onAddMessage: Conversations
 		@aws_subscribe(mutations: ["addMessage"])
+    onAddUserConversation : UserConversation
+        @aws_subscribe(mutations: ["addUserConversation"])
 }
 
 input TableBooleanFilterInput {
