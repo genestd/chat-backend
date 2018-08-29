@@ -22,10 +22,13 @@ This is a Serverless.js template to build a backend for a chat web application. 
 
 
 ### Cognito
-* THERE ARE 2 MANUAL STEPS FOR COGNITO
+* THERE ARE 3 MANUAL STEPS FOR COGNITO
   * You must set the email verification type to link
+  ![verification](https://github.com/genestd/chat-backend/blob/master/Cognito%20Link.png)
   * You must set Cognito as a provider for your app client
+  ![provider](https://github.com/genestd/chat-backend/blob/master/Cognito%20Provider.png)
   * You must set the domain name for the authentication server (use website name, replace `.` with `-`)
+  ![domain](https://github.com/genestd/chat-backend/blob/master/Cognito%20Domain.png)
   
 ### CDN/Website
 * This project assumes that you have a domain on AWS. If you do not,
